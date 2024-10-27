@@ -22,9 +22,10 @@ library
     exposed-modules:  
         Eval
         Parser
+        Language
     default-extensions:
         OverloadedStrings
-        ImportQualifiedPostj
+        ImportQualifiedPost
     build-depends:    base ^>=4.17.2.1
                     , parsec
     hs-source-dirs:   src
