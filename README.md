@@ -74,7 +74,7 @@ end.
 
 <end> ::= ("END." | "End." | "end.");
 
-<stm> ::= [<dec>] | [<exp_stm>] | <if> | <return_stm>;
+<stm> ::= [<exp_stm>] | <if> | <return_stm>;
 
 <dec> ::= <type_decl>  
       | LIdent ":=" <const>
@@ -85,7 +85,8 @@ end.
 
 <exp_stm> ::= <exp> ";"
 
-<exp> ::= <digit> "%" <exp>;
+<exp> ::= <dec>
+      | <digit> "%" <exp>;
       | <digit> "/" <exp>;
       | <digit> "*" <exp>;
       | <digit> "-" <exp>;
@@ -98,6 +99,8 @@ end.
 <if> ::= ("IF" | "If" | "if" ) <exp> 
             ( "THEN" | "Then" | "then")  [<exp_stm>]
             ("ELSE | "Else" | "else") [<exp_stm>]
+
+<do> :: ("DO" | "Do" | "do" ) <exp> "->" [<exp_stm] ("OD" | "Od" | "od")
 
 <return_stm> ::= ("RETURN" | "Return" | "return" ) <exp_stm>;
 ```
