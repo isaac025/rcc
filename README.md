@@ -26,7 +26,7 @@ end.
 ## Fibonacci
 
 ```
-PROCEDURE Fib(x : INT64)
+PROCEDURE Fib(x : Int64)
 BEGIN
     IF x == 0 \/ x == 1
         THEN RETURN 1
@@ -48,9 +48,9 @@ end.
 ```bnf
 <program> ::= procedure [procedure];
 
-<procedure> ::= ("PROCEDURE" | "Procedure" | "procedurer") Ident <param_list> <body> ;
+<procedure> ::= ("PROCEDURE" | "Procedure" | "procedure") Ident "(" <param_list> ")" <body> ;
 
-<param_list> ::= "(" <type_decl> ")" ; 
+<param_list> ::= <type_decl> ; 
              | type_decl "," [type_decl];
 
 <type_decl> ::= LIdent ":" <type>;
@@ -74,7 +74,7 @@ end.
 
 <end> ::= ("END." | "End." | "end.");
 
-<stm> ::= [<dec>] | [<expr_stm>];
+<stm> ::= [<dec>] | [<exp_stm>] | <if> | <return_stm>;
 
 <dec> ::= <type_decl>  
       | LIdent ":=" <const>
@@ -83,14 +83,21 @@ end.
 
 <bool> ::= "true" | "false"
 
--- from highest order to lowest
+<exp_stm> ::= <exp> ";"
+
 <exp> ::= <digit> "%" <exp>;
       | <digit> "/" <exp>;
       | <digit> "*" <exp>;
       | <digit> "-" <exp>;
       | <digit> "+" <exp>;
-      | <digit> "/\ <exp>;
-      | <digit> "^" <exp>;
-      | <digit> "\/ <exp>;
+      | <bool> "/\ <exp>;
+      | <bool> "^" <exp>;
+      | <bool> "\/ <exp>;
       | dec;
+
+<if> ::= ("IF" | "If" | "if" ) <exp> 
+            ( "THEN" | "Then" | "then")  [<exp_stm>]
+            ("ELSE | "Else" | "else") [<exp_stm>]
+
+<return_stm> ::= ("RETURN" | "Return" | "return" ) <exp_stm>;
 ```

@@ -1,0 +1,8 @@
+// Swap 
+procedure Swap(x, y : Int64)
+var tmp : Int64.  // create a local variable
+begin
+    tmp := x;
+    x := y;
+    y := tmp;
+end.
