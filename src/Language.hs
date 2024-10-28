@@ -41,6 +41,7 @@ data Expr
     | U32 Word32
     | Boolean Bool
     | Str String
+    | Var String
     | BinE BinOp Expr Expr
     deriving (Show)
 
@@ -52,6 +53,12 @@ data BinOp
     | And
     | Or
     | XOr
+    | Gt
+    | GtE
+    | Lt
+    | LtE
+    | Equal
+    | NEqual
 
 instance Show BinOp where
     show Add = "+"
@@ -61,6 +68,12 @@ instance Show BinOp where
     show And = "/\\"
     show Or = "\\/"
     show XOr = "^"
+    show Gt = ">"
+    show GtE = ">="
+    show Lt = "<"
+    show LtE = "<="
+    show Equal = "="
+    show NEqual = "!="
 
 -- Language Expression Symantics
 class ExprSym repr where
@@ -71,6 +84,7 @@ class ExprSym repr where
     f64 :: Double -> repr
     f32 :: Float -> repr
     str :: String -> repr
+    var :: String -> repr
     bool :: Bool -> repr
     bin :: BinOp -> repr -> repr -> repr
 
@@ -84,23 +98,27 @@ instance ExprSym Expr where
     u32 = U32
     bin = BinE
     str = Str
+    var = Var
 
 -- Language Statement Symantics
 data Stm
     = ExprStm Expr
-    | IfStm Expr Stm Stm
-    | Return Stm
+    | Assign String Stm
+    | If Expr Stm Stm
+    | Function String [Stm]
     deriving (Show)
 
 class StmSym repr where
     exprStm :: Expr -> repr
+    assign :: String -> repr -> repr
     ifStm :: Expr -> repr -> repr -> repr
-    returnStm :: repr -> repr
+    fun :: String -> [repr] -> repr
 
 instance StmSym Stm where
-    ifStm = IfStm
-    returnStm = Return
     exprStm = ExprStm
+    assign = Assign
+    ifStm = If
+    fun = Function
 
 -- Lexer
 refLexer :: TokenParser st
