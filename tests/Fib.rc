@@ -1,5 +1,4 @@
-// Commennt: Fibonacci
-PROCEDURE Fib(x : Int64)
+PROCEDURE Fib(x : I64)
 BEGIN
     IF x == 0 \/ x == 1
         THEN RETURN 1

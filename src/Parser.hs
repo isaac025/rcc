@@ -9,6 +9,7 @@ import Language
 import Text.Parsec.Expr
 import Text.ParserCombinators.Parsec
 
+-- helpers
 whitespace :: Parser ()
 whitespace =
     choice
@@ -20,6 +21,19 @@ whitespace =
 
 lexeme :: Parser p -> Parser p
 lexeme p = p <* whitespace
+
+parseType :: Parser Type
+parseType =
+    choice
+        [ I64T <$ string "I64"
+        , I32T <$ string "I32"
+        , U64T <$ string "U64"
+        , U32T <$ string "U32"
+        , F64T <$ string "F64"
+        , F32T <$ string "F32"
+        , BoolT <$ string "Bool"
+        , StringT <$ string "String"
+        ]
 
 -- type synonyms for operators from parsec
 type Op a = Operator String () Identity a
@@ -159,14 +173,27 @@ parseProcDecl :: (StmSym repr) => Parser repr
 parseProcDecl = do
     parseProcedure
     fname <- lexeme parseFunDecl
+    mvarDecl <- lexeme $ optionMaybe parseVarStm
     parseBegin
     stms <- lexeme $ many1 stm
     parseEnd
-    pure $ fun fname stms
+    pure $ proc fname mvarDecl stms
+
+-- parse var decl
+parseVar :: Parser ()
+parseVar = reserved refLexer "VAR" <|> reserved refLexer "Var" <|> reserved refLexer "var"
+
+parseVarStm :: (StmSym repr) => Parser repr
+parseVarStm = do
+    parseVar
+    v <- identifier refLexer <* char ':'
+    whitespace
+    t <- parseType <* char '.'
+    pure $ varStm v t
 
 -- statements
 stm :: (StmSym repr) => Parser repr
-stm = parseProcDecl <|> parseIfStm <|> parseAssignment <|> parseExprStm
+stm = parseProcDecl <|> parseVarStm <|> parseIfStm <|> parseAssignment <|> parseExprStm
 
 parser :: (StmSym repr) => String -> Either String repr
 parser input =

@@ -1,0 +1,5 @@
+procedure Swap()
+var x : I64.
+begin
+    x := 2;
+end.

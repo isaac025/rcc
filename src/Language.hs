@@ -14,6 +14,7 @@ module Language (
     Int32,
     Word64,
     Word32,
+    Type (..),
 ) where
 
 import Data.Int (Int32)
@@ -101,24 +102,38 @@ instance ExprSym Expr where
     var = Var
 
 -- Language Statement Symantics
+data Type
+    = I64T
+    | I32T
+    | U64T
+    | U32T
+    | F64T
+    | F32T
+    | BoolT
+    | StringT
+    deriving (Show)
+
 data Stm
     = ExprStm Expr
+    | VarStm String Type
     | Assign String Stm
     | If Expr Stm Stm
-    | Function String [Stm]
+    | Procedure String (Maybe Stm) [Stm]
     deriving (Show)
 
 class StmSym repr where
     exprStm :: Expr -> repr
     assign :: String -> repr -> repr
     ifStm :: Expr -> repr -> repr -> repr
-    fun :: String -> [repr] -> repr
+    proc :: String -> Maybe repr -> [repr] -> repr
+    varStm :: String -> Type -> repr
 
 instance StmSym Stm where
     exprStm = ExprStm
     assign = Assign
     ifStm = If
-    fun = Function
+    proc = Procedure
+    varStm = VarStm
 
 -- Lexer
 refLexer :: TokenParser st
@@ -127,9 +142,9 @@ refLexer = makeTokenParser refCalcDef
 refCalcDef :: LanguageDef st
 refCalcDef =
     LanguageDef
-        { commentStart = "{"
-        , commentEnd = "}"
-        , commentLine = "?"
+        { commentStart = "/*"
+        , commentEnd = "*/"
+        , commentLine = "//"
         , nestedComments = True
         , identStart = letter
         , identLetter = alphaNum <|> char '_'
