@@ -1,13 +1,15 @@
 module Language (
     refLexer,
-    RefSym (..),
+    ExprSym (..),
+    StmSym (..),
     reserved,
     reservedOp,
     integer,
+    stringLiteral,
     identifier,
     float,
     Expr (..),
-    Type (..),
+    Stm (..),
     BinOp (..),
     Int32,
     Word64,
@@ -17,19 +19,19 @@ module Language (
 import Data.Int (Int32)
 import Data.Word (Word32, Word64)
 import Text.Parsec (alphaNum, char, letter, oneOf, (<|>))
-import Text.Parsec.Token (TokenParser, float, identifier, integer, makeTokenParser, reserved, reservedOp)
+import Text.Parsec.Token (
+    TokenParser,
+    float,
+    identifier,
+    integer,
+    makeTokenParser,
+    reserved,
+    reservedOp,
+    stringLiteral,
+ )
 import Text.ParserCombinators.Parsec.Language
 
--- AST & BinOp & Types
-data Type
-    = I64T
-    | I32T
-    | F64T
-    | F32T
-    | U64T
-    | U32T
-    | BoolT
-
+-- AST & BinOp
 data Expr
     = I64 Int
     | I32 Int32
@@ -38,21 +40,9 @@ data Expr
     | U64 Word64
     | U32 Word32
     | Boolean Bool
-    | Var String Type
-    | Con String Type
+    | Str String
     | BinE BinOp Expr Expr
-
-instance Show Expr where
-    show (I64 x) = show x ++ " : I64"
-    show (I32 x) = show x ++ " : I32"
-    show (F64 x) = show x ++ " : F64"
-    show (F32 x) = show x ++ " : F32"
-    show (U64 x) = show x ++ " : U64"
-    show (U32 x) = show x ++ " : U32"
-    show (Var x _) = x
-    show (Con x _) = x
-    show (Boolean x) = show x ++ " : Bool"
-    show (BinE o e1 e2) = show e1 ++ " " ++ show o ++ " " ++ show e2
+    deriving (Show)
 
 data BinOp
     = Add
@@ -72,18 +62,19 @@ instance Show BinOp where
     show Or = "\\/"
     show XOr = "^"
 
--- Language Symantics
-class RefSym repr where
+-- Language Expression Symantics
+class ExprSym repr where
     i64 :: Int -> repr
     i32 :: Int32 -> repr
     u64 :: Word64 -> repr
     u32 :: Word32 -> repr
     f64 :: Double -> repr
-    f32 :: Double -> repr
+    f32 :: Float -> repr
+    str :: String -> repr
     bool :: Bool -> repr
     bin :: BinOp -> repr -> repr -> repr
 
-instance RefSym Expr where
+instance ExprSym Expr where
     i64 = I64
     i32 = I32
     f64 = F64
@@ -92,6 +83,24 @@ instance RefSym Expr where
     u64 = U64
     u32 = U32
     bin = BinE
+    str = Str
+
+-- Language Statement Symantics
+data Stm
+    = ExprStm Expr
+    | IfStm Expr Stm Stm
+    | Return Stm
+    deriving (Show)
+
+class StmSym repr where
+    exprStm :: Expr -> repr
+    ifStm :: Expr -> repr -> repr -> repr
+    returnStm :: repr -> repr
+
+instance StmSym Stm where
+    ifStm = IfStm
+    returnStm = Return
+    exprStm = ExprStm
 
 -- Lexer
 refLexer :: TokenParser st
@@ -100,8 +109,8 @@ refLexer = makeTokenParser refCalcDef
 refCalcDef :: LanguageDef st
 refCalcDef =
     LanguageDef
-        { commentStart = "(*"
-        , commentEnd = "*)"
+        { commentStart = "{"
+        , commentEnd = "}"
         , commentLine = "?"
         , nestedComments = True
         , identStart = letter
