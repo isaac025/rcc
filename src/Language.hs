@@ -51,6 +51,7 @@ data BinOp
     | Sub
     | Mul
     | Div
+    | Mod
     | And
     | Or
     | XOr
@@ -66,6 +67,7 @@ instance Show BinOp where
     show Sub = "-"
     show Mul = "*"
     show Div = "/"
+    show Mod = "%"
     show And = "/\\"
     show Or = "\\/"
     show XOr = "^"
@@ -115,6 +117,7 @@ data Type
 
 data Stm
     = ExprStm Expr
+    | Return Expr
     | VarStm String Type
     | ConStm String Type
     | Assign String Stm
@@ -124,6 +127,7 @@ data Stm
 
 class StmSym repr where
     exprStm :: Expr -> repr
+    ret :: Expr -> repr
     assign :: String -> repr -> repr
     ifStm :: Expr -> repr -> repr -> repr
     proc :: String -> Maybe repr -> [repr] -> repr
@@ -137,6 +141,7 @@ instance StmSym Stm where
     proc = Procedure
     varStm = VarStm
     conStm = ConStm
+    ret = Return
 
 -- Lexer
 refLexer :: TokenParser st

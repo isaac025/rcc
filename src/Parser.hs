@@ -93,6 +93,7 @@ table =
     [
         [ binaryOp "*" (bin Mul) AssocLeft
         , binaryOp "/" (bin Div) AssocLeft
+        , binaryOp "%" (bin Mod) AssocLeft
         ]
     ,
         [ binaryOp "+" (bin Add) AssocLeft
@@ -129,6 +130,15 @@ expr = buildExpressionParser table term
 -- Parse an expression statement
 parseExprStm :: (StmSym repr) => Parser repr
 parseExprStm = exprStm <$> lexeme (expr <* char ';')
+
+-- parse return statement
+parseReturn :: Parser ()
+parseReturn = reserved refLexer "RETURN" <|> reserved refLexer "Return" <|> reserved refLexer "return"
+
+parseReturnStm :: (StmSym repr) => Parser repr
+parseReturnStm = do
+    parseReturn
+    parseExprStm
 
 -- Parse an assignment statement
 parseAssignment :: (StmSym repr) => Parser repr
@@ -205,7 +215,7 @@ parseConStm = do
 
 -- statements
 stm :: (StmSym repr) => Parser repr
-stm = parseProcDecl <|> parseVarStm <|> parseIfStm <|> parseAssignment <|> parseExprStm
+stm = parseProcDecl <|> parseVarStm <|> parseIfStm <|> parseAssignment <|> parseReturnStm <|> parseExprStm
 
 parser :: (StmSym repr) => String -> Either String repr
 parser input =
