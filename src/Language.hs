@@ -116,6 +116,7 @@ data Type
 data Stm
     = ExprStm Expr
     | VarStm String Type
+    | ConStm String Type
     | Assign String Stm
     | If Expr Stm Stm
     | Procedure String (Maybe Stm) [Stm]
@@ -127,6 +128,7 @@ class StmSym repr where
     ifStm :: Expr -> repr -> repr -> repr
     proc :: String -> Maybe repr -> [repr] -> repr
     varStm :: String -> Type -> repr
+    conStm :: String -> Type -> repr
 
 instance StmSym Stm where
     exprStm = ExprStm
@@ -134,6 +136,7 @@ instance StmSym Stm where
     ifStm = If
     proc = Procedure
     varStm = VarStm
+    conStm = ConStm
 
 -- Lexer
 refLexer :: TokenParser st
