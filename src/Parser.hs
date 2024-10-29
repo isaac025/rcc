@@ -186,6 +186,22 @@ parseIfStm = do
     parseElse
     ifStm e thns <$> stm
 
+-- parse do
+parseDo :: Parser ()
+parseDo = reserved refLexer "DO" <|> reserved refLexer "Do" <|> reserved refLexer "do"
+
+parseOd :: Parser ()
+parseOd = reserved refLexer "OD" <|> reserved refLexer "Od" <|> reserved refLexer "od"
+
+parseDoStm :: (StmSym repr) => Parser repr
+parseDoStm = do
+    parseDo
+    e <- expr @Expr
+    reservedOp refLexer "->"
+    stms <- many1 stm
+    parseOd
+    pure $ doStm e stms
+
 -- function def
 parseProcedure :: Parser ()
 parseProcedure = reserved refLexer "PROCEDURE" <|> reserved refLexer "Procedure" <|> reserved refLexer "procedure"
@@ -228,7 +244,7 @@ parseConStm = do
 
 -- statements
 stm :: (StmSym repr) => Parser repr
-stm = try (lexeme parseFunStm) <|> parseIfStm <|> parseReturnStm <|> parseAssignment <|> parseVarStm <|> parseExprStm
+stm = try (lexeme parseFunStm) <|> parseDoStm <|> parseIfStm <|> parseReturnStm <|> parseAssignment <|> parseVarStm <|> parseExprStm
 
 -- program
 parseProcDecl :: (ProgSym repr) => Parser repr

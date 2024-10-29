@@ -142,6 +142,7 @@ data Stm
     | ConStm String Type
     | AssignStm String Stm
     | If Expr Stm Stm
+    | Do Expr [Stm]
     deriving (Show)
 
 class StmSym repr where
@@ -152,6 +153,7 @@ class StmSym repr where
     varStm :: String -> Type -> repr
     conStm :: String -> Type -> repr
     funStm :: String -> [Expr] -> repr
+    doStm :: Expr -> [repr] -> repr
 
 instance StmSym Stm where
     exprStm = ExprStm
@@ -161,6 +163,7 @@ instance StmSym Stm where
     conStm = ConStm
     ret = Return
     funStm = FunStm
+    doStm = Do
 
 data Program
     = Procedure String [Parameter] (Maybe Stm) [Stm]
