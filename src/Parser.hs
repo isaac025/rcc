@@ -243,7 +243,7 @@ parseProcDecl = do
     pure $ proc fname params mvarDecl stms
 
 prog :: (ProgSym repr) => Parser repr
-prog = parseProcDecl
+prog = program <$> many1 (lexeme parseProcDecl)
 
 parser :: (ProgSym repr) => String -> Either String repr
 parser input =

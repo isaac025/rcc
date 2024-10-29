@@ -1,0 +1,13 @@
+PROCEDURE Main()
+VAR x : I64.
+BEGIN
+    x := Foo();
+    IF x >= 10
+    THEN RETURN 1;
+    ELSE RETURN -1;
+END.
+
+PROCEDURE Foo()
+BEGIN
+    RETURN 5;
+END.
