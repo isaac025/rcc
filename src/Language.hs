@@ -2,6 +2,7 @@ module Language (
     refLexer,
     ExprSym (..),
     StmSym (..),
+    ProgSym (..),
     reserved,
     reservedOp,
     integer,
@@ -11,6 +12,7 @@ module Language (
     Expr (..),
     Stm (..),
     BinOp (..),
+    Procedure (..),
     Int32,
     Word64,
     Word32,
@@ -63,6 +65,7 @@ data BinOp
     | LtE
     | Equal
     | NEqual
+    | Assign
 
 instance Show BinOp where
     show Add = "+"
@@ -79,6 +82,7 @@ instance Show BinOp where
     show LtE = "<="
     show Equal = "="
     show NEqual = "!="
+    show Assign = ":="
 
 -- Language Expression Symantics
 class ExprSym repr where
@@ -133,11 +137,11 @@ type Parameter = (String, Maybe Type)
 data Stm
     = ExprStm Expr
     | Return Expr
+    | FunStm String [Expr]
     | VarStm String Type
     | ConStm String Type
-    | Assign String Stm
+    | AssignStm String Stm
     | If Expr Stm Stm
-    | Procedure String [Parameter] (Maybe Stm) [Stm]
     deriving (Show)
 
 class StmSym repr where
@@ -145,18 +149,27 @@ class StmSym repr where
     ret :: Expr -> repr
     assign :: String -> repr -> repr
     ifStm :: Expr -> repr -> repr -> repr
-    proc :: String -> [Parameter] -> Maybe repr -> [repr] -> repr
     varStm :: String -> Type -> repr
     conStm :: String -> Type -> repr
+    funStm :: String -> [Expr] -> repr
 
 instance StmSym Stm where
     exprStm = ExprStm
-    assign = Assign
+    assign = AssignStm
     ifStm = If
-    proc = Procedure
     varStm = VarStm
     conStm = ConStm
     ret = Return
+    funStm = FunStm
+
+data Procedure = Procedure String [Parameter] (Maybe Stm) [Stm]
+    deriving (Show)
+
+class ProgSym repr where
+    proc :: String -> [Parameter] -> Maybe Stm -> [Stm] -> repr
+
+instance ProgSym Procedure where
+    proc = Procedure
 
 -- Lexer
 refLexer :: TokenParser st

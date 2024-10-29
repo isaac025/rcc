@@ -1,6 +1,0 @@
-PROCEDURE Fib(x : I64)
-BEGIN
-    IF x = 0 \/ x = 1
-        THEN RETURN 1;
-        ELSE RETURN x - 1 + x - 2; 
-END.

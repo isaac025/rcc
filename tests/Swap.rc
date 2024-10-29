@@ -1,0 +1,7 @@
+PROCEDURE Swap(x, y : I64)
+VAR tmp : I64.
+BEGIN
+    tmp := x;
+    x := y;
+    y := tmp;
+END.

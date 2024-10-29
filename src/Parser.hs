@@ -93,8 +93,8 @@ parseOp :: String -> Parser ()
 parseOp = reservedOp refLexer
 
 -- parse func call
-parseFun :: (ExprSym repr) => Parser repr
-parseFun = do
+parseRefFun :: (ExprSym repr) => Parser repr
+parseRefFun = do
     funName <- identifier refLexer
     fun funName <$> parenthesis (commas expr)
 
@@ -136,14 +136,20 @@ term =
         <|> parseRefBool
         <|> parseRefStr
         <|> parseRefVar
-        <|> parseFun
 
 expr :: (ExprSym repr) => Parser repr
-expr = buildExpressionParser table term
+expr = try parseRefFun <|> lexeme (buildExpressionParser table term)
 
 -- Parse an expression statement
 parseExprStm :: (StmSym repr) => Parser repr
 parseExprStm = exprStm <$> lexeme (expr <* char ';')
+
+parseFunStm :: (StmSym repr) => Parser repr
+parseFunStm = do
+    funName <- identifier refLexer
+    args <- parenthesis (commas expr)
+    _ <- char ';'
+    pure $ funStm funName args
 
 -- parse return statement
 parseReturn :: Parser ()
@@ -196,20 +202,6 @@ parseBegin = reserved refLexer "BEGIN" <|> reserved refLexer "Begin" <|> reserve
 parseEnd :: Parser ()
 parseEnd = (reserved refLexer "END" <|> reserved refLexer "End" <|> reserved refLexer "end") <* char '.'
 
-parseFunDecl :: Parser String
-parseFunDecl = identifier refLexer
-
-parseProcDecl :: (StmSym repr) => Parser repr
-parseProcDecl = do
-    parseProcedure
-    fname <- lexeme parseFunDecl
-    params <- parenthesis (commas parseParam)
-    mvarDecl <- lexeme $ optionMaybe parseVarStm
-    parseBegin
-    stms <- lexeme $ many1 stm
-    parseEnd
-    pure $ proc fname params mvarDecl stms
-
 -- parse var decl
 parseVar :: Parser ()
 parseVar = reserved refLexer "VAR" <|> reserved refLexer "Var" <|> reserved refLexer "var"
@@ -236,10 +228,25 @@ parseConStm = do
 
 -- statements
 stm :: (StmSym repr) => Parser repr
-stm = parseProcDecl <|> parseVarStm <|> parseIfStm <|> parseAssignment <|> parseReturnStm <|> parseExprStm
+stm = try (lexeme parseFunStm) <|> parseIfStm <|> parseReturnStm <|> parseAssignment <|> parseVarStm <|> parseExprStm
 
-parser :: (StmSym repr) => String -> Either String repr
+-- program
+parseProcDecl :: (ProgSym repr) => Parser repr
+parseProcDecl = do
+    parseProcedure
+    fname <- lexeme (identifier refLexer)
+    params <- parenthesis (commas parseParam)
+    mvarDecl <- lexeme $ optionMaybe parseVarStm
+    parseBegin
+    stms <- lexeme $ many1 stm
+    parseEnd
+    pure $ proc fname params mvarDecl stms
+
+prog :: (ProgSym repr) => Parser repr
+prog = parseProcDecl
+
+parser :: (ProgSym repr) => String -> Either String repr
 parser input =
-    case parse stm "rc" input of
+    case parse prog "rc" input of
         Left err -> Left $ show err
         Right val -> Right val
