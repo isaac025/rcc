@@ -7,6 +7,7 @@ import Control.Monad (void)
 import Data.Functor.Identity (Identity)
 import Language
 import Text.Parsec.Expr
+import Text.Parsec.Token (commaSep, parens)
 import Text.ParserCombinators.Parsec
 
 -- helpers
@@ -21,6 +22,12 @@ whitespace =
 
 lexeme :: Parser p -> Parser p
 lexeme p = p <* whitespace
+
+commas :: Parser p -> Parser [p]
+commas = commaSep refLexer
+
+parenthesis :: Parser p -> Parser p
+parenthesis = parens refLexer
 
 parseType :: Parser Type
 parseType =
@@ -85,6 +92,12 @@ parseRefVar = var <$> identifier refLexer
 parseOp :: String -> Parser ()
 parseOp = reservedOp refLexer
 
+-- parse func call
+parseFun :: (ExprSym repr) => Parser repr
+parseFun = do
+    funName <- identifier refLexer
+    fun funName <$> parenthesis (commas expr)
+
 binaryOp :: (ExprSym repr) => String -> (repr -> repr -> repr) -> Assoc -> Op repr
 binaryOp x f = Infix (parseOp x >> pure f)
 
@@ -123,6 +136,7 @@ term =
         <|> parseRefBool
         <|> parseRefStr
         <|> parseRefVar
+        <|> parseFun
 
 expr :: (ExprSym repr) => Parser repr
 expr = buildExpressionParser table term
@@ -170,6 +184,12 @@ parseIfStm = do
 parseProcedure :: Parser ()
 parseProcedure = reserved refLexer "PROCEDURE" <|> reserved refLexer "Procedure" <|> reserved refLexer "procedure"
 
+parseParam :: Parser Parameter
+parseParam = do
+    paramName <- identifier refLexer
+    paramType <- optionMaybe (reservedOp refLexer ":" >> parseType)
+    pure (paramName, paramType)
+
 parseBegin :: Parser ()
 parseBegin = reserved refLexer "BEGIN" <|> reserved refLexer "Begin" <|> reserved refLexer "begin"
 
@@ -177,17 +197,18 @@ parseEnd :: Parser ()
 parseEnd = (reserved refLexer "END" <|> reserved refLexer "End" <|> reserved refLexer "end") <* char '.'
 
 parseFunDecl :: Parser String
-parseFunDecl = identifier refLexer <* string "()"
+parseFunDecl = identifier refLexer
 
 parseProcDecl :: (StmSym repr) => Parser repr
 parseProcDecl = do
     parseProcedure
     fname <- lexeme parseFunDecl
+    params <- parenthesis (commas parseParam)
     mvarDecl <- lexeme $ optionMaybe parseVarStm
     parseBegin
     stms <- lexeme $ many1 stm
     parseEnd
-    pure $ proc fname mvarDecl stms
+    pure $ proc fname params mvarDecl stms
 
 -- parse var decl
 parseVar :: Parser ()

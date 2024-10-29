@@ -15,6 +15,7 @@ module Language (
     Word64,
     Word32,
     Type (..),
+    Parameter,
 ) where
 
 import Data.Int (Int32)
@@ -43,6 +44,7 @@ data Expr
     | Boolean Bool
     | Str String
     | Var String
+    | Fun String [Expr]
     | BinE BinOp Expr Expr
     deriving (Show)
 
@@ -90,6 +92,7 @@ class ExprSym repr where
     var :: String -> repr
     bool :: Bool -> repr
     bin :: BinOp -> repr -> repr -> repr
+    fun :: String -> [repr] -> repr
 
 instance ExprSym Expr where
     i64 = I64
@@ -102,6 +105,7 @@ instance ExprSym Expr where
     bin = BinE
     str = Str
     var = Var
+    fun = Fun
 
 -- Language Statement Symantics
 data Type
@@ -113,7 +117,18 @@ data Type
     | F32T
     | BoolT
     | StringT
-    deriving (Show)
+
+instance Show Type where
+    show I64T = "I64"
+    show I32T = "I32"
+    show U64T = "U64"
+    show U32T = "I32"
+    show F64T = "F64"
+    show F32T = "F32"
+    show BoolT = "Boolean"
+    show StringT = "String"
+
+type Parameter = (String, Maybe Type)
 
 data Stm
     = ExprStm Expr
@@ -122,7 +137,7 @@ data Stm
     | ConStm String Type
     | Assign String Stm
     | If Expr Stm Stm
-    | Procedure String (Maybe Stm) [Stm]
+    | Procedure String [Parameter] (Maybe Stm) [Stm]
     deriving (Show)
 
 class StmSym repr where
@@ -130,7 +145,7 @@ class StmSym repr where
     ret :: Expr -> repr
     assign :: String -> repr -> repr
     ifStm :: Expr -> repr -> repr -> repr
-    proc :: String -> Maybe repr -> [repr] -> repr
+    proc :: String -> [Parameter] -> Maybe repr -> [repr] -> repr
     varStm :: String -> Type -> repr
     conStm :: String -> Type -> repr
 

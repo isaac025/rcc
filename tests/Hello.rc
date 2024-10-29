@@ -1,19 +1,4 @@
-{All caps}
 PROCEDURE Main()
 BEGIN
     Print("Hello World!");
 END.
-
-{ Upper case
-Procedure Main()
-Begin
-    Print("Hello World!");
-End.
-
-
-all lower
-procedure Main()
-begin
-    Print("Hello World!")
-end.
-}
