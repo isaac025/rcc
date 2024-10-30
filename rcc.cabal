@@ -22,22 +22,21 @@ library
     exposed-modules:  
         Parser
         Language
+        Eval
     default-extensions:
         OverloadedStrings
         ImportQualifiedPost
     build-depends:    base ^>=4.17.2.1
                     , parsec
+                    , mtl
+                    , transformers
     hs-source-dirs:   src
     default-language: Haskell2010
 
 executable rcc
     import:           warnings
     main-is:          Main.hs
-    -- other-modules:
-    -- other-extensions:
-    build-depends:
-        base ^>=4.17.2.1,
-        rcc
-
+    build-depends:    base ^>=4.17.2.1
+                    , rcc
     hs-source-dirs:   app
     default-language: Haskell2010
