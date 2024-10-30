@@ -20,4 +20,7 @@ runEval a = evalStateT (unEval a) emptyEnv
 eval :: Program -> EvalM ()
 eval (Prog []) = pure ()
 eval (Prog (x : xs)) = eval x >> eval (Prog xs)
-eval (Procedure name [] Nothing stms) = undefined
+eval (Procedure _name [] Nothing _stms) = undefined
+eval (Procedure _name (_ : _) Nothing _stms) = undefined
+eval (Procedure _name [] (Just _) _stms) = undefined
+eval (Procedure _name (_ : _) (Just _) _stms) = undefined
