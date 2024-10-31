@@ -1,6 +1,6 @@
 procedure Newvar()
+var x : I64.
 begin
-    return 2;
+    x := 2;
+    return x;
 end.
-
-Print(Newvar());

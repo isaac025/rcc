@@ -3,6 +3,7 @@ module Language (
     ExprSym (..),
     StmSym (..),
     ProgSym (..),
+    Value (..),
     reserved,
     reservedOp,
     integer,
@@ -65,7 +66,6 @@ data BinOp
     | LtE
     | Equal
     | NEqual
-    | Assign
 
 instance Show BinOp where
     show Add = "+"
@@ -82,7 +82,34 @@ instance Show BinOp where
     show LtE = "<="
     show Equal = "="
     show NEqual = "!="
-    show Assign = ":="
+
+data Value
+    = I64V Int
+    | I32V Int32
+    | F64V Double
+    | F32V Float
+    | U64V Word64
+    | U32V Word32
+    | BoolV Bool
+    | StrV String
+    | VarV String
+    | FunV String [Expr]
+    | BinV BinOp Expr Expr
+    | None
+
+instance Show Value where
+    show (I64V i) = show i
+    show (I32V i) = show i
+    show (F64V i) = show i
+    show (F32V i) = show i
+    show (U64V i) = show i
+    show (U32V i) = show i
+    show (BoolV i) = show i
+    show (StrV i) = i
+    show (VarV i) = i
+    show (FunV i es) = i ++ " " ++ show es
+    show (BinV b e1 e2) = show e1 ++ show b ++ show e2
+    show None = show ()
 
 -- Language Expression Symantics
 class ExprSym repr where
