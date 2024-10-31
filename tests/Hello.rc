@@ -1,4 +1,6 @@
 PROCEDURE Main()
 BEGIN
-    Print("Hello World!");
+    If false
+    Then Print("Hello World!");
+    Else Print("Hello Mars!");
 END.

@@ -5,3 +5,8 @@ BEGIN
     x := y;
     y := tmp;
 END.
+
+PROCEDURE Main()
+BEGIN
+    Swap(1,2);
+END.
