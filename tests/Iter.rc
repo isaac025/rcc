@@ -1,7 +1,7 @@
-procedure Iter()
+Procedure Iter()
 Var x : I64.
-begin
-    do x >= 10 ->
+Begin
+    Do x >= 10 ->
         x := x - 1;
-    od
-end.
+    Od
+End.
