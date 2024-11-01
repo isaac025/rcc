@@ -1,0 +1,9 @@
+procedure One()
+begin
+    return 1;
+end.
+
+procedure Main()
+begin
+    One();
+end.

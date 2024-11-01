@@ -235,7 +235,7 @@ stm :: (StmSym repr) => Parser repr
 stm = try (lexeme parseFunStm) <|> parseDoStm <|> parseIfStm <|> parseReturnStm <|> parseAssignment <|> parseVarStm <|> parseExprStm
 
 -- program
-parseProcDecl :: (ProgSym repr) => Parser repr
+parseProcDecl :: (ProcSym repr) => Parser repr
 parseProcDecl = do
     parseProcedure
     fname <- lexeme (identifier refLexer)
@@ -244,7 +244,7 @@ parseProcDecl = do
     parseBegin
     stms <- lexeme $ many1 stm
     parseEnd
-    pure $ proc fname params mvarDecl stms
+    pure $ procedure fname params mvarDecl stms
 
 prog :: (ProgSym repr) => Parser repr
 prog = program <$> many1 (lexeme parseProcDecl)

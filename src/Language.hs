@@ -3,6 +3,7 @@ module Language (
     ExprSym (..),
     StmSym (..),
     ProgSym (..),
+    ProcSym (..),
     Value (..),
     reserved,
     reservedOp,
@@ -13,6 +14,7 @@ module Language (
     Expr (..),
     Stm (..),
     BinOp (..),
+    Procedure (..),
     Program (..),
     Int32,
     Word64,
@@ -189,18 +191,23 @@ instance StmSym Stm where
     funStm = FunStm
     doStm = Do
 
-data Program
-    = Procedure String [Parameter] (Maybe Stm) [Stm]
-    | Prog [Program]
+data Procedure = Procedure String [Parameter] (Maybe Stm) [Stm]
+    deriving (Show)
+
+class ProcSym repr where
+    procedure :: String -> [Parameter] -> Maybe Stm -> [Stm] -> repr
+
+instance ProcSym Procedure where
+    procedure = Procedure
+
+data Program = Program [Procedure]
     deriving (Show)
 
 class ProgSym repr where
-    proc :: String -> [Parameter] -> Maybe Stm -> [Stm] -> repr
-    program :: [repr] -> repr
+    program :: [Procedure] -> repr
 
 instance ProgSym Program where
-    proc = Procedure
-    program = Prog
+    program = Program
 
 -- Lexer
 refLexer :: TokenParser st

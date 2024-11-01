@@ -1,75 +1,32 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RecordWildCards #-}
-
-module Eval where
-
-import Control.Monad.State.Lazy
 import Data.Fixed (mod')
-import Language
 
-type Env = [(String, Value)]
-
-data Stack = Stack
-    { procs :: [(String, [Stm])]
-    , env :: Env
-    }
-
-class (Monad m) => StackMonad m where
-    updateStack :: String -> [Stm] -> m ()
-    updateEnv :: String -> Value -> m ()
-    lookupStack :: String -> m (Maybe [Stm])
-    lookupEnv :: String -> m (Maybe Value)
-
-newtype EvalM a = EvalM {unEval :: StateT Stack (Either String) a}
-    deriving (Functor, Applicative, Monad, MonadState Stack)
-
-runEval :: EvalM a -> Either String a
-runEval a = evalStateT (unEval a) emptyStack
-  where
-    emptyStack :: Stack
-    emptyStack = Stack [] []
-
-instance StackMonad EvalM where
-    updateStack name stms = do
-        Stack{..} <- get
-        put (Stack ((name, stms) : procs) env)
-    updateEnv name expr = do
-        Stack{..} <- get
-        put (Stack procs ((name, expr) : env))
-    lookupStack name = do
-        procedures <- gets procs
-        pure $ lookup name procedures
-    lookupEnv name = do
-        e <- gets env
-        pure $ lookup name e
-
-eval :: Program -> EvalM Value
-eval (Prog []) = pure None
+eval :: Program -> SemanticsM ()
+eval (Prog []) = pure ()
 eval (Prog (x : xs)) = eval x >> eval (Prog xs)
-eval (Procedure "Main" [] Nothing stms) = last <$> mapM evalStm stms
+eval (Procedure "Main" [] Nothing stms) = do
+    mapM_ evalStm stms
 eval (Procedure "Main" [] (Just (VarStm v _)) stms) = do
     updateEnv v None
-    last <$> mapM evalStm stms
-eval (Procedure "Main" _ (Just s) _) = error $ "Expecting variable declaration, got: " ++ show s
-eval (Procedure "Main" ls _ _) = error $ "Main does not have arguments, cannot pass: " ++ show ls
+    mapM_ evalStm stms
+eval (Procedure "Main" _ (Just s) _) = throwError $ "Expecting variable declaration, got: " ++ show s
+eval (Procedure "Main" ls _ _) = throwError $ "Main does not have arguments, cannot pass: " ++ show ls
 eval (Procedure name [] Nothing stms) = do
     updateStack name stms
-    pure None
+    pure ()
 eval (Procedure name vars Nothing stms) = do
     mapM_ (\(v, _) -> updateEnv v None) vars
     updateStack name stms
-    pure None
+    pure ()
 eval (Procedure _name [] (Just _) _stms) = undefined
 eval (Procedure _name (_ : _) (Just _) _stms) = undefined
 
-evalStm :: Stm -> EvalM Value
+evalStm :: Stm -> SemanticsM Value
 evalStm (ExprStm e) = evalExpr e
 evalStm (Return e) = evalExpr e
 evalStm (FunStm n _args) = do
     mstm <- lookupStack n
     case mstm of
-        Nothing -> error $ "Procedure " ++ n ++ " not defined"
+        Nothing -> throwError $ "Procedure " ++ n ++ " not defined"
         Just stms -> mapM_ evalStm stms >> pure None
 evalStm (VarStm name _) = do
     updateEnv name None
@@ -83,7 +40,7 @@ evalStm (If e stm1 stm2) = do
     case v of
         BoolV True -> evalStm stm1
         BoolV False -> evalStm stm2
-        _ -> error $ "If expects boolean, got: " ++ show v
+        _ -> throwError $ "If expects boolean, got: " ++ show v
 evalStm (Do expr body) = do
     v <- evalExpr expr
     case v of
@@ -93,7 +50,7 @@ evalStm (Do expr body) = do
 {-
     | Do Expr [Stm]
 -}
-evalExpr :: Expr -> EvalM Value
+evalExpr :: Expr -> SemanticsM Value
 evalExpr (I64 i) = pure (I64V i)
 evalExpr (I32 i) = pure (I32V i)
 evalExpr (U64 i) = pure (U64V i)
@@ -106,12 +63,12 @@ evalExpr (BinE op e1 e2) = binaryDecision op <$> evalExpr e1 <*> evalExpr e2
 evalExpr (Var i) = do
     mval <- lookupEnv i
     case mval of
-        Nothing -> error $ "Variable " ++ i ++ " not defined"
+        Nothing -> throwError $ "Variable " ++ i ++ " not defined"
         Just val -> pure val
 evalExpr (Fun name _args) = do
     mstms <- lookupStack name
     case mstms of
-        Nothing -> error $ "Procedure " ++ name ++ " not defined"
+        Nothing -> throwError $ "Procedure " ++ name ++ " not defined"
         Just stms -> last <$> mapM evalStm stms
 
 binaryDecision :: BinOp -> (Value -> Value -> Value)

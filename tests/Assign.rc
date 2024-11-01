@@ -6,5 +6,3 @@ BEGIN
     THEN x := 5;
     ELSE x := 0;
 END.
-
-

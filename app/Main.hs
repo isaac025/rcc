@@ -1,8 +1,8 @@
 module Main where
 
-import Eval
 import Language
 import Parser
+import Semantics
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess)
 
@@ -11,10 +11,11 @@ compile f = do
     contents <- readFile f
     case parser contents :: Either String Program of
         Left err -> putStrLn err >> exitFailure
-        Right val -> do
-            case runEval (eval val) of
-                Left err -> putStrLn err >> exitFailure
-                Right value -> print value >> exitSuccess
+        Right ast -> do
+            stack <- initStack
+            result <- semanticsEval stack (analyzeProgram ast)
+            print result
+            exitSuccess
 
 main :: IO ()
 main = do

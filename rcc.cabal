@@ -22,7 +22,7 @@ library
     exposed-modules:  
         Parser
         Language
-        Eval
+        Semantics
     default-extensions:
         OverloadedStrings
         ImportQualifiedPost
