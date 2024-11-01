@@ -1,9 +1,6 @@
 PROCEDURE Main()
-VAR x : I64.
 BEGIN
     IF 5 >= 10
     THEN RETURN 1;
     ELSE RETURN -1;
 END.
-
-

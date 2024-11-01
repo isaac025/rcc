@@ -8,7 +8,7 @@ import Control.Monad.State.Lazy
 import Data.Fixed (mod')
 import Language
 
-type Env = [(String, Expr)]
+type Env = [(String, Value)]
 
 data Stack = Stack
     { procs :: [(String, [Stm])]
@@ -17,9 +17,9 @@ data Stack = Stack
 
 class (Monad m) => StackMonad m where
     updateStack :: String -> [Stm] -> m ()
-    updateEnv :: String -> Expr -> m ()
+    updateEnv :: String -> Value -> m ()
     lookupStack :: String -> m (Maybe [Stm])
-    lookupEnv :: String -> m (Maybe Expr)
+    lookupEnv :: String -> m (Maybe Value)
 
 newtype EvalM a = EvalM {unEval :: StateT Stack (Either String) a}
     deriving (Functor, Applicative, Monad, MonadState Stack)
@@ -44,33 +44,53 @@ instance StackMonad EvalM where
         e <- gets env
         pure $ lookup name e
 
-eval :: Program -> EvalM ()
-eval (Prog []) = pure ()
+eval :: Program -> EvalM Value
+eval (Prog []) = pure None
 eval (Prog (x : xs)) = eval x >> eval (Prog xs)
-eval (Procedure "Main" [] Nothing stms) = mapM_ evalStm stms
+eval (Procedure "Main" [] Nothing stms) = last <$> mapM evalStm stms
 eval (Procedure "Main" [] (Just (VarStm v _)) stms) = do
-    updateEnv v (Var v)
-    mapM_ evalStm stms
+    updateEnv v None
+    last <$> mapM evalStm stms
 eval (Procedure "Main" _ (Just s) _) = error $ "Expecting variable declaration, got: " ++ show s
 eval (Procedure "Main" ls _ _) = error $ "Main does not have arguments, cannot pass: " ++ show ls
-eval (Procedure name [] Nothing stms) = updateStack name stms
-eval (Procedure name vars Nothing stms) = do
-    mapM_ (\(v, _) -> updateEnv v (Var v)) vars
+eval (Procedure name [] Nothing stms) = do
     updateStack name stms
+    pure None
+eval (Procedure name vars Nothing stms) = do
+    mapM_ (\(v, _) -> updateEnv v None) vars
+    updateStack name stms
+    pure None
 eval (Procedure _name [] (Just _) _stms) = undefined
 eval (Procedure _name (_ : _) (Just _) _stms) = undefined
 
 evalStm :: Stm -> EvalM Value
-evalStm = undefined {-(ExprStm e) = evalExpr e
-                    evalStm (Return e) = evalExpr e
-                    evalStm (VarStm s _) = updateEnv s (Var s)
-                    -}
+evalStm (ExprStm e) = evalExpr e
+evalStm (Return e) = evalExpr e
+evalStm (FunStm n _args) = do
+    mstm <- lookupStack n
+    case mstm of
+        Nothing -> error $ "Procedure " ++ n ++ " not defined"
+        Just stms -> mapM_ evalStm stms >> pure None
+evalStm (VarStm name _) = do
+    updateEnv name None
+    pure None
+evalStm (AssignStm s stm) = do
+    v <- evalStm stm
+    updateEnv s v
+    pure None
+evalStm (If e stm1 stm2) = do
+    v <- evalExpr e
+    case v of
+        BoolV True -> evalStm stm1
+        BoolV False -> evalStm stm2
+        _ -> error $ "If expects boolean, got: " ++ show v
+evalStm (Do expr body) = do
+    v <- evalExpr expr
+    case v of
+        BoolV True -> mapM_ evalStm body >> evalStm (Do expr body)
+        _ -> pure None
 
 {-
-evalStm (FunStm n es) = undefined
-ConStm String Type
-    | AssignStm String Stm
-    | If Expr Stm Stm
     | Do Expr [Stm]
 -}
 evalExpr :: Expr -> EvalM Value
@@ -82,8 +102,12 @@ evalExpr (F64 i) = pure (F64V i)
 evalExpr (F32 i) = pure (F32V i)
 evalExpr (Boolean i) = pure (BoolV i)
 evalExpr (Str i) = pure (StrV i)
-evalExpr (Var i) = pure (VarV i)
 evalExpr (BinE op e1 e2) = binaryDecision op <$> evalExpr e1 <*> evalExpr e2
+evalExpr (Var i) = do
+    mval <- lookupEnv i
+    case mval of
+        Nothing -> error $ "Variable " ++ i ++ " not defined"
+        Just val -> pure val
 evalExpr (Fun name _args) = do
     mstms <- lookupStack name
     case mstms of

@@ -166,7 +166,6 @@ data Stm
     | Return Expr
     | FunStm String [Expr]
     | VarStm String Type
-    | ConStm String Type
     | AssignStm String Stm
     | If Expr Stm Stm
     | Do Expr [Stm]
@@ -178,7 +177,6 @@ class StmSym repr where
     assign :: String -> repr -> repr
     ifStm :: Expr -> repr -> repr -> repr
     varStm :: String -> Type -> repr
-    conStm :: String -> Type -> repr
     funStm :: String -> [Expr] -> repr
     doStm :: Expr -> [repr] -> repr
 
@@ -187,7 +185,6 @@ instance StmSym Stm where
     assign = AssignStm
     ifStm = If
     varStm = VarStm
-    conStm = ConStm
     ret = Return
     funStm = FunStm
     doStm = Do

@@ -230,18 +230,6 @@ parseVarStm = do
     t <- parseType <* char '.'
     pure $ varStm v t
 
--- parse con decl
-parseCon :: Parser ()
-parseCon = reserved refLexer "CON" <|> reserved refLexer "Con" <|> reserved refLexer "con"
-
-parseConStm :: (StmSym repr) => Parser repr
-parseConStm = do
-    parseCon
-    v <- identifier refLexer <* char ':'
-    whitespace
-    t <- parseType <* char '.'
-    pure $ conStm v t
-
 -- statements
 stm :: (StmSym repr) => Parser repr
 stm = try (lexeme parseFunStm) <|> parseDoStm <|> parseIfStm <|> parseReturnStm <|> parseAssignment <|> parseVarStm <|> parseExprStm
