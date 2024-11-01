@@ -1,4 +1,5 @@
-procedure Iter(x : I64)
+procedure Iter()
+Var x : I64.
 begin
     do x >= 10 ->
         x := x - 1;

@@ -1,4 +1,4 @@
-PROCEDURE Swap(x, y : I64)
+PROCEDURE Swap(x : I64, y : I64)
 VAR tmp : I64.
 BEGIN
     tmp := x;

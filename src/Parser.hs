@@ -39,7 +39,7 @@ parseType =
         , F64T <$ string "F64"
         , F32T <$ string "F32"
         , BoolT <$ string "Bool"
-        , StringT <$ string "String"
+        , StrT <$ string "String"
         ]
 
 -- type synonyms for operators from parsec
@@ -209,7 +209,7 @@ parseProcedure = reserved refLexer "PROCEDURE" <|> reserved refLexer "Procedure"
 parseParam :: Parser Parameter
 parseParam = do
     paramName <- identifier refLexer
-    paramType <- optionMaybe (reservedOp refLexer ":" >> parseType)
+    paramType <- reservedOp refLexer ":" >> parseType
     pure (paramName, paramType)
 
 parseBegin :: Parser ()

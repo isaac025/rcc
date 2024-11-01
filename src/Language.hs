@@ -149,7 +149,8 @@ data Type
     | F64T
     | F32T
     | BoolT
-    | StringT
+    | StrT
+    deriving (Eq)
 
 instance Show Type where
     show I64T = "I64"
@@ -159,9 +160,9 @@ instance Show Type where
     show F64T = "F64"
     show F32T = "F32"
     show BoolT = "Boolean"
-    show StringT = "String"
+    show StrT = "String"
 
-type Parameter = (String, Maybe Type)
+type Parameter = (String, Type)
 
 data Stm
     = ExprStm Expr
