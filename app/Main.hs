@@ -8,7 +8,15 @@ import Brick.Types (BrickEvent (..), EventM, Widget)
 import Brick.Util (bg, on)
 import Brick.Widgets.Border (borderAttr, borderWithLabel)
 import Brick.Widgets.Border.Style (borderStyleFromChar)
-import Brick.Widgets.Core (str, withAttr, withBorderStyle)
+import Brick.Widgets.Center (hCenter)
+import Brick.Widgets.Core (
+    emptyWidget,
+    padAll,
+    str,
+    withAttr,
+    withBorderStyle,
+ )
+import Brick.Widgets.Dialog (Dialog, renderDialog)
 import Brick.Widgets.Edit (
     Editor,
     editAttr,
@@ -32,22 +40,42 @@ import Semantics
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess)
 
-data Name = TextEditor | TextEditorLines
-    deriving (Eq, Ord, Show)
+data SaveOpt = Yes | No
 
-initState :: Maybe FilePath -> String -> St
-initState f c = St (editor TextEditor Nothing c) f
+data NewFileOpt = Save | Cancel
+
+data Name
+    = TextEditor
+    | TextEditorLines
+    | SavePrompt
+    | YesButton
+    | NoButton
+    | NewFilePrompt
+    | SaveButton
+    | CancelButton
+    deriving (Eq, Ord, Show)
 
 data St = St
     { _textEditor :: Editor String Name
     , _mfile :: Maybe FilePath
+    , _savePrompt :: Maybe (Dialog SaveOpt Name)
+    , _newFilePrompt :: Maybe (Dialog NewFileOpt Name)
     }
 makeLenses ''St
 
+initState :: Maybe FilePath -> String -> St
+initState f c = St (editor TextEditor Nothing c) f Nothing Nothing
+
 draw :: St -> [Widget Name]
-draw st = [withBorderStyle (borderStyleFromChar ' ') $ withAttr borderLabelAttr $ borderWithLabel (str "Turbo Calculus") e]
+draw st = drawSave st : [withBorderStyle (borderStyleFromChar ' ') $ withAttr borderLabelAttr $ borderWithLabel (str "Turbo Calculus") e]
   where
     e = renderEditor (str . unlines) True (st ^. textEditor)
+
+drawSave :: St -> Widget Name
+drawSave st =
+    case st ^. savePrompt of
+        Nothing -> emptyWidget
+        Just sd -> renderDialog sd $ hCenter $ padAll 1 $ str "Really want to save?"
 
 compile :: FilePath -> IO ()
 compile f = do
