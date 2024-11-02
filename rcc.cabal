@@ -38,6 +38,8 @@ executable rcc
     build-depends:    base ^>=4.17.2.1
                     , rcc
                     , brick
+                    , filepath
+                    , directory
                     , vty
                     , microlens
                     , microlens-mtl

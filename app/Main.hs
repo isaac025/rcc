@@ -49,8 +49,10 @@ import Lens.Micro.Mtl (use, zoom, (%=), (.=), (?=))
 import Lens.Micro.TH (makeLenses)
 import Parser
 import Semantics
+import System.Directory (getCurrentDirectory)
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess)
+import System.FilePath ((</>))
 
 data NewFileOpt = Save | Cancel
 
@@ -103,7 +105,7 @@ drawSaveAs :: FocusRing Name -> Editor String Name -> Widget Name
 drawSaveAs f ed = withBorderStyle unicodeBold $ border $ vLimit 1 $ label <+> saveAsEditor
   where
     saveAsEditor = withFocusRing f (renderEditor (str . unlines)) ed
-    label = str " Filter: "
+    label = str "Save as: "
 
 compile :: FilePath -> IO ()
 compile f = do
@@ -166,10 +168,21 @@ appEventDialog (VtyEvent (EvKey KEnter [])) = do
     filePrompt <- use newFilePrompt
     case dialogSelection =<< filePrompt of
         Just (CancelButton, Cancel) -> newFilePrompt .= Nothing
-        Just (SaveButton, Save) -> undefined
+        Just (SaveButton, Save) -> do
+            saed <- use saveAs
+            case saed of
+                Nothing -> pure ()
+                Just ed -> do
+                    currDir <- liftIO getCurrentDirectory
+                    let fileName = (unlines $ getEditContents ed) ++ ".rc"
+                        filePath = currDir </> fileName
+                    saveFile filePath
+                    newFilePrompt .= Nothing
         _ -> pure ()
 appEventDialog (VtyEvent (EvKey (KChar '\t') [])) = (newFileFocus . _Just) %= focusNext
 appEventDialog (VtyEvent (EvKey KBackTab [])) = (newFileFocus . _Just) %= focusPrev
+appEventDialog (VtyEvent (EvKey KUp [])) = (newFileFocus . _Just) %= focusNext
+appEventDialog (VtyEvent (EvKey KDown [])) = (newFileFocus . _Just) %= focusPrev
 appEventDialog ev@(VtyEvent e) = do
     f <- use newFileFocus
     case f of
