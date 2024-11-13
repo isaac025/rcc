@@ -1,6 +1,0 @@
-procedure Newvar()
-var x : I64.
-begin
-    x := 2;
-    return x;
-end.

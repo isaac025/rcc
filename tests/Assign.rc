@@ -1,8 +1,0 @@
-PROCEDURE Main()
-VAR x : I64.
-BEGIN
-    x := 1 + 2;
-    IF x < 2
-    THEN x := 5;
-    ELSE x := 0;
-END.

@@ -1,7 +1,0 @@
-Procedure Iter()
-Var x : I64.
-Begin
-    Do x >= 10 ->
-        x := x - 1;
-    Od
-End.

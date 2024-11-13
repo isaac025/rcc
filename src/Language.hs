@@ -24,6 +24,7 @@ module Language (
 ) where
 
 import Data.Int (Int32)
+import Data.Text (Text)
 import Data.Word (Word32, Word64)
 import Text.Parsec (alphaNum, char, letter, oneOf, (<|>))
 import Text.Parsec.Token (
@@ -230,63 +231,23 @@ refCalcDef =
         , caseSensitive = True
         }
 
-refCalcOps :: [String]
-refCalcOps =
-    [ "->"
-    , ":="
-    , "."
-    , ";"
-    , "+"
-    , "-"
-    , "*"
-    , "/"
-    , "\\/"
-    , "/\\"
-    , "^"
-    ]
+rslTypeOps :: [Text]
+rslTypeOps = ["-set", "><", "->"]
 
-refCalcKeywords :: [String]
-refCalcKeywords =
-    [ "PROCEDURE"
-    , "Procedure"
-    , "procedure"
-    , "I64"
-    , "I32"
-    , "U64"
-    , "U32"
-    , "F64"
-    , "F32"
+rslOps :: [Text]
+rslOps = ["=", "~=", "is", "isin", "=>", ":-", "union", "card"]
+
+rslKeywords :: [Text]
+rslKeywords =
+    [ "class"
+    , "type"
+    , "value"
+    , "axiom"
+    , "end"
+    , "Nat"
     , "Bool"
     , "true"
     , "false"
-    , "VAR"
-    , "Var"
-    , "var"
-    , "CON"
-    , "Con"
-    , "con"
-    , "BEGIN"
-    , "Begin"
-    , "begin"
-    , "END"
-    , "End"
-    , "end"
-    , "IF"
-    , "If"
-    , "if"
-    , "THEN"
-    , "Then"
-    , "then"
-    , "ELSE"
-    , "Else"
-    , "else"
-    , "DO"
-    , "Do"
-    , "do"
-    , "OD"
-    , "Od"
-    , "od"
-    , "RETURN"
-    , "Return"
-    , "return"
+    , "extend"
+    , "with"
     ]

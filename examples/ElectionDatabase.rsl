@@ -1,0 +1,8 @@
+ELECTION_DATABASE =
+extend DATABASE with
+class
+    /* The function 'number' returns the number of people registered */ 
+    value number : Database -> Nat
+    axiom forall db : Database :- number(db) is card db
+end
+

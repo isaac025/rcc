@@ -1,0 +1,56 @@
+cabal-version:      3.0
+name:               rdm
+version:            0.0.0.1
+synopsis:           RAISE Development Method
+homepage:           https://github.com/isaac025/rdm
+license:            GPL-2.0-only
+license-file:       LICENSE
+author:             Isaac Hiram Lopez Diaz
+maintainer:         isaac.lopez@upr.com
+category:           Language
+build-type:         Simple
+extra-doc-files:    
+    CHANGELOG.md
+    README.md
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:  TypeChecker
+    default-extensions:
+        ImportQualifiedPost
+        OverloadedStrings
+    other-modules:
+        Parser
+        Language
+        Semantics
+    build-depends:    base ^>=4.17.2.1
+                    , parsec
+                    , mtl
+                    , transformers
+                    , text
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+executable rdm
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base ^>=4.17.2.1
+                    , rdm
+                    , text
+    hs-source-dirs:   app
+    default-language: Haskell2010
+
+test-suite rdm-test
+    import:           warnings
+    default-language: Haskell2010
+    -- other-modules:
+    -- other-extensions:
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Main.hs
+    build-depends:
+        base ^>=4.15.1.0,
+        rdm
