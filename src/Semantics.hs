@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Semantics where
 
+io :: IO ()
+io = putStrLn "hey"
+
+{-
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.IORef
@@ -295,3 +296,4 @@ neq' (F32 _) (F32 _) = pure ()
 neq' (Boolean _) (Boolean _) = pure ()
 neq' (Str _) (Str _) = pure ()
 neq' _ _ = throwError $ GeneralError "!= types do not match"
+-}

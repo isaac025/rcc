@@ -1,16 +1,46 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
-
 module Parser where
 
 import Control.Monad (void)
 import Data.Functor.Identity (Identity)
+import Data.Text.Lazy (Text, pack)
+import Expressions
 import Language
-import Text.Parsec.Expr
-import Text.Parsec.Token (commaSep, parens)
-import Text.ParserCombinators.Parsec
+import Text.Parsec (
+    ParseError,
+    choice,
+    many1,
+    oneOf,
+    optionMaybe,
+    parse,
+ )
+import Text.Parsec.Expr (Operator (..))
+import Text.Parsec.Text.Lazy (Parser)
+import Text.Parsec.Token (
+    GenTokenParser (..),
+    parens,
+ )
 
--- helpers
+rslIdentifier :: Parser Text
+rslIdentifier = pack <$> rslLexeme (identifier rslLexer)
+
+rslParens :: Parser a -> Parser a
+rslParens = parens rslLexer
+
+rslReserved :: String -> Parser ()
+rslReserved = reserved rslLexer
+
+rslSemiSep :: Parser a -> Parser [a]
+rslSemiSep = semiSep rslLexer
+
+rslReservedOp :: String -> Parser ()
+rslReservedOp = reservedOp rslLexer
+
+rslPrefixOp :: String -> (a -> a) -> Operator Text () Identity a
+rslPrefixOp s f = Prefix (rslReservedOp s >> pure f)
+
+rslLexeme :: Parser p -> Parser p
+rslLexeme p = p <* whitespace
+
 whitespace :: Parser ()
 whitespace =
     choice
@@ -20,9 +50,7 @@ whitespace =
   where
     simpleWhitespace = void $ many1 (oneOf " \t\n")
 
-lexeme :: Parser p -> Parser p
-lexeme p = p <* whitespace
-
+{- helpers
 commas :: Parser p -> Parser [p]
 commas = commaSep refLexer
 
@@ -234,23 +262,32 @@ parseVarStm = do
 stm :: (StmSym repr) => Parser repr
 stm = try (lexeme parseFunStm) <|> parseDoStm <|> parseIfStm <|> parseReturnStm <|> parseAssignment <|> parseVarStm <|> parseExprStm
 
--- program
-parseProcDecl :: (ProcSym repr) => Parser repr
-parseProcDecl = do
-    parseProcedure
-    fname <- lexeme (identifier refLexer)
-    params <- parenthesis (commas parseParam)
-    mvarDecl <- lexeme $ optionMaybe parseVarStm
-    parseBegin
-    stms <- lexeme $ many1 stm
-    parseEnd
-    pure $ procedure fname params mvarDecl stms
+-- module
+data Module = Module
+    { moduleName :: Text
+    , declarations :: [Declaration]
+    , extension :: Maybe Text
+-}
 
-prog :: (ProgSym repr) => Parser repr
-prog = program <$> many1 (lexeme parseProcDecl)
+parseDeclarations :: Parser [Declaration]
+parseDeclarations = undefined
 
-parser :: (ProgSym repr) => String -> Either String repr
-parser input =
-    case parse prog "rc" input of
-        Left err -> Left $ show err
-        Right val -> Right val
+parseReservedModType :: Parser Text
+parseReservedModType = do
+    rslReserved "extend"
+    mextension <- rslIdentifier
+    rslReserved "with"
+    pure mextension
+
+parseModule :: Parser Module
+parseModule = do
+    mname <- pack <$> rslLexeme (identifier rslLexer)
+    rslReservedOp "="
+    mextension <- optionMaybe parseReservedModType
+    rslReserved "class"
+    -- mdecls <- parseDeclarations
+    rslReserved "end"
+    pure $ Module mname [] mextension
+
+parser :: Text -> Either ParseError Module
+parser = parse parseModule "rdm"

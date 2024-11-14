@@ -1,0 +1,15 @@
+LIST =
+class
+    type
+        List
+    value
+        empty : List
+        add : Int >< List -> List
+        head : List -~-> Int
+        tail : List -~-> Int
+    axiom forall i : Int, l : List :-
+        [head_add]
+            head(add(i,l)) is i,
+        [tail_add]
+            tail(add(i,l)) is l
+end

@@ -1,105 +1,67 @@
 module Language (
-    refLexer,
-    reserved,
-    reservedOp,
-    integer,
-    stringLiteral,
-    identifier,
-    float,
-    Type (..),
+    rslLexer,
 ) where
 
-import Data.List.NonEmpty (NonEmpty)
-import Data.Text (Text)
-import Data.Void (Void)
+import Control.Monad.Identity (Identity)
+import Data.Text.Lazy (Text)
 import Text.Parsec (alphaNum, char, letter, oneOf, (<|>))
 import Text.Parsec.Token (
-    TokenParser,
-    float,
-    identifier,
-    integer,
+    GenLanguageDef (..),
+    GenTokenParser (..),
     makeTokenParser,
-    reserved,
-    reservedOp,
-    stringLiteral,
  )
-import Text.ParserCombinators.Parsec.Language
 
-data Type
-    = NatT
-    | BoolT
-    | IntT
-    | RealT
-    | CharT
-    | TextT
-    | UnitT
-    deriving (Eq)
-
-data TypeExpr
-
-data ValueBinOp
-    = Equal
-    | NotEqual
-    | And
-    | Or
-    | Impl
-
-data ValueExpr
-    = BoolVE Bool
-    | ChaosVE Void
-    | If ValueExpr ValueExpr (Maybe [ValueExpr]) ValueExpr
-    | BinOpVE ValueBinOp ValueExpr ValueExpr
-    | NotVE ValueExpr
-
-data TypeDeclaration
-    = Sort Text
-    | AbstractType Text TypeExpr
-
-data ValueDeclaration = ValueDeclaration
-    { valueIdentifier :: Text
-    , valueTypeExpr :: TypeExpr
-    }
-
-data AxiomDeclaration = AxiomDeclaration
-    { axiomNaming :: Maybe Text
-    , axiomValueExpr :: NonEmpty ValueExpr
-    }
-data Declaration
-    = TypeDecl TypeDeclaration
-    | ValueDecl ValueDeclaration
-    | AxiomDecl AxiomDeclaration
-
-data Module = Module
-    { moduleName :: Text
-    , declarations :: [Declaration]
-    }
-
-rslLexer :: TokenParser st
-rslLexer = makeTokenParser refCalcDef
-
-rslDef :: LanguageDef st
+rslDef :: GenLanguageDef Text st Identity
 rslDef =
     LanguageDef
         { commentStart = "/*"
         , commentEnd = "*/"
-        , commentLine = undefined
+        , commentLine = "//"
         , nestedComments = False
         , identStart = letter
         , identLetter = alphaNum <|> char '_'
-        , opStart = opLetter emptyDef
+        , opStart = opLetter rslDef
         , opLetter = oneOf ":!#$%&*+./<=>?@\\^|-~"
-        , reservedOpNames = refCalcOps
-        , reservedNames = refCalcKeywords
+        , reservedOpNames = rslOps <> rslTypeOps
+        , reservedNames = rslKeywords
         , caseSensitive = True
         }
 
-rslTypeOps :: [Text]
-rslTypeOps = ["-set", "><", "->"]
+rslTypeOps :: [String]
+rslTypeOps = ["-set", "><", "->", "-~->"]
 
-rslOps :: [Text]
-rslOps = ["=", "~=", "is", "isin", "=>", ":-", "union", "card"]
+rslOps :: [String]
+rslOps =
+    [ "="
+    , "~="
+    , "is"
+    , "isin"
+    , "=>"
+    , ":-"
+    , "union"
+    , "card"
+    , "~"
+    , "/\\"
+    , "\\/"
+    , "abs"
+    , "forall"
+    , "exists"
+    , "int"
+    , "real"
+    , "-\\"
+    , ">="
+    , ">"
+    , "<="
+    , "<"
+    , "+"
+    , "-"
+    , "*"
+    , "/"
+    , "\\"
+    , "**"
+    ]
 
-rslKeywords :: [Text]
+rslKeywords :: [String]
 rslKeywords =
     [ "class"
     , "type"
@@ -122,4 +84,9 @@ rslKeywords =
     , "then"
     , "else"
     , "elsif"
+    , "pre"
+    , "post"
     ]
+
+rslLexer :: GenTokenParser Text st Identity
+rslLexer = makeTokenParser rslDef

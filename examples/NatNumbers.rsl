@@ -1,0 +1,16 @@
+NAT_NUMBERS =
+extend PEANO with
+class
+    value
+        plus : N >< N -> N,
+        mult : N >< N -> N
+    axiom forall n, n1, n2 : N :-
+        [plus_zero]
+            plus(n, zero) is n,
+        [plus_succ]
+            plus(n1, succ(n2)) is succ(plus(n1,n2)),
+        [mult_zero]
+            mult(n, zero) is zero,
+        [mult_succ]
+            mult(n1, succ(n2)) is plus(mult(n1,n2)n1)
+end

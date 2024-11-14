@@ -1,0 +1,25 @@
+DATABASE =
+class
+    type
+        Database, Key, Data
+    value
+        empty : Database,
+        insert : Key >< Data >< Database -> Database,
+        remove : Key >< Database -> Database,
+        defined : Key >< Database -> Bool,
+        lookup : Key >< Database -~-> Data
+    axiom forall k, k1 : Key, d : Data, db : Database :-
+        [remove_empty]
+            remove(k, empty) is empty,
+        [remove_insert]
+            remove(k, insert(k1, d db)) =
+                if k = k1 then remove (k, db) else insert (k1, d, remove(k,db)) end,
+        [defined_empty]
+            defined(k, empty) is false,
+        [defined_insert]
+            defined(k, insert(k1, d, db)) is k = k1 \/ defined(k,db),
+        [lookup_insert]
+            lookup(k, insert(k1, d, db)) is if k = k1 then d else lookup(k,db) end
+                pre k = k1 \/ defined(k, db)
+end
+

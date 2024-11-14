@@ -1,0 +1,17 @@
+PEANO =
+class
+    type
+        N
+    value
+        zero : N,
+        succ : N -> N
+    axiom forall n, n1, n2 : N :-
+        [first_is_zero]
+            ~(succ(n) is zero),
+        [linear_order]
+            (succ(n1) is succ(n2)) => (n1 is n2),
+        [induction]
+            forall p : N -> Bool :-
+                (p(zero) /\ (forall n : N :- p(n) => p(succ(n)))) =>
+                    (forall n : N :- p(n))
+end
