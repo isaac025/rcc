@@ -1,8 +1,11 @@
+{-# LANGUAGE TypeApplications #-}
 module Parser where
 
 import Control.Monad (void)
+import Data.Void (Void)
 import Data.Functor.Identity (Identity)
 import Data.List.NonEmpty (nonEmpty)
+import Numeric.Natural (Natural)
 import Data.Maybe (catMaybes)
 import Data.Text.Lazy (Text, pack)
 import Expressions
@@ -10,6 +13,8 @@ import Language
 import Text.Parsec (
     ParseError,
     choice,
+    string,
+    many,
     many1,
     oneOf,
     optionMaybe,
@@ -19,6 +24,7 @@ import Text.Parsec (
     try,
     (<|>),
  )
+import Data.Proxy
 import Text.Parsec.Expr (Operator (..))
 import Text.Parsec.Text.Lazy (Parser)
 import Text.Parsec.Token (
@@ -28,6 +34,21 @@ import Text.Parsec.Token (
 
 rslIdentifier :: Parser Text
 rslIdentifier = pack <$> rslLexeme (identifier rslLexer)
+
+rslInt :: Parser Int
+rslInt = fromInteger <$> integer rslLexer
+
+rslNat :: Parser Natural
+rslNat = fromInteger <$> natural rslLexer
+
+rslReal :: Parser Double
+rslReal = float rslLexer
+
+rslChar :: Parser Char
+rslChar = charLiteral rslLexer
+
+rslText :: Parser Text
+rslText = pack <$> stringLiteral rslLexer
 
 rslParens :: Parser a -> Parser a
 rslParens = parens rslLexer
@@ -98,7 +119,55 @@ rslTypeExpr :: Parser TypeExpr
 rslTypeExpr = try rslFunctionTypeExpr <|> rslSimpleTypeExpr
 
 -- value expressions
+rslBoolValueExpr :: Parser ValueExpr
+rslBoolValueExpr = do
+    boolVal <- (True <$ rslReserved "true") <|> (False <$ rslReserved "false")
+    pure $ BoolVE boolVal
 
+rslIntValueExpr :: Parser ValueExpr
+rslIntValueExpr = IntVE <$> rslInt
+
+rslNatValueExpr :: Parser ValueExpr
+rslNatValueExpr = NatVE <$> rslNat
+
+rslRealValueExpr :: Parser ValueExpr
+rslRealValueExpr = RealVE <$> rslReal
+
+rslCharValueExpr :: Parser ValueExpr
+rslCharValueExpr = NatVE <$> rslNat
+
+rslTextValueExpr :: Parser ValueExpr
+rslTextValueExpr = TextVE <$> rslText
+
+rslUnitValueExpr :: Parser ValueExpr
+rslUnitValueExpr = UnitVE <$> void (string "()")
+
+rslChaosValueExpr :: Parser ValueExpr
+rslChaosValueExpr = ChaosVE <$> ((Proxy @Void) <$ rslReserved "chaos")
+
+rslIdValueExpr :: Parser ValueExpr
+rslIdValueExpr = IdVE <$> rslIdentifier
+
+rslIfValueExpr :: Parser ValueExpr
+rslIfValueExpr = do
+    rslReserved "if"
+    cnd <- rslValueExpr
+    rslReserved "then"
+    thn <- rslValueExpr
+    elsifs <- optionMaybe $ many rslElsifExpr
+    rslReserved "else"
+    If cnd thn elsifs <$> rslValueExpr
+    where
+        rslElsifExpr :: Parser (ValueExpr, ValueExpr)
+        rslElsifExpr = do
+            rslReserved "elsif"
+            c <- rslValueExpr
+            rslReserved "then"
+            expr <- rslValueExpr
+            pure (c, expr)
+
+rslValueExpr :: Parser ValueExpr
+rslValueExpr = undefined
 -- declarations
 rslTypeDef :: Parser TypeDeclaration
 rslTypeDef =

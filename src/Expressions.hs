@@ -3,6 +3,7 @@ module Expressions where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Text.Lazy (Text)
 import Data.Void (Void)
+import Data.Proxy
 import Numeric.Natural
 
 data Module = Module
@@ -59,10 +60,10 @@ data AxiomDeclaration = AxiomDeclaration
 data ValueExpr
     = BoolVE Bool
     | IdVE Text
-    | If ValueExpr ValueExpr (Maybe [ValueExpr]) ValueExpr
+    | If ValueExpr ValueExpr (Maybe [(ValueExpr, ValueExpr)]) ValueExpr
     | NotVE ValueExpr
     | BinOpVE ValueBinOp ValueExpr ValueExpr
-    | ChaosVE Void
+    | ChaosVE (Proxy Void)
     | QuantVE Quantifier TypingList ValueExpr
     | IntVE Int
     | Abs ValueExpr
