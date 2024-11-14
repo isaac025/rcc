@@ -12,6 +12,7 @@ import Text.Parsec (
     oneOf,
     optionMaybe,
     parse,
+    (<|>),
  )
 import Text.Parsec.Expr (Operator (..))
 import Text.Parsec.Text.Lazy (Parser)
@@ -32,6 +33,9 @@ rslReserved = reserved rslLexer
 rslSemiSep :: Parser a -> Parser [a]
 rslSemiSep = semiSep rslLexer
 
+rslCommaSep :: Parser a -> Parser [a]
+rslCommaSep = commaSep rslLexer
+
 rslReservedOp :: String -> Parser ()
 rslReservedOp = reservedOp rslLexer
 
@@ -45,7 +49,7 @@ whitespace :: Parser ()
 whitespace =
     choice
         [ simpleWhitespace *> whitespace
-        , return ()
+        , pure ()
         ]
   where
     simpleWhitespace = void $ many1 (oneOf " \t\n")
@@ -258,20 +262,51 @@ parseVarStm = do
     t <- parseType <* char '.'
     pure $ varStm v t
 
--- statements
-stm :: (StmSym repr) => Parser repr
-stm = try (lexeme parseFunStm) <|> parseDoStm <|> parseIfStm <|> parseReturnStm <|> parseAssignment <|> parseVarStm <|> parseExprStm
+-- type decl
+data TypeDeclaration
+    = Sort Text
+    | AbstractType Text TypeExpr
 
--- module
-data Module = Module
-    { moduleName :: Text
-    , declarations :: [Declaration]
-    , extension :: Maybe Text
+data Type
+    = NatT
+    | BoolT
+    | IntT
+    | RealT
+    | CharT
+    | TextT
+    | UnitT
+    | AdtT Text
 -}
 
-parseDeclarations :: Parser [Declaration]
-parseDeclarations = undefined
+-- type expressions
+rslType :: Parser Type
+rslType =
+    (NatT <$ rslReserved "Nat")
+        <|> (BoolT <$ rslReserved "Bool")
+        <|> (IntT <$ rslReserved "Int")
+        <|> (RealT <$ rslReserved "Real")
+        <|> (CharT <$ rslReserved "Char")
+        <|> (TextT <$ rslReserved "Text")
+        <|> (UnitT <$ rslReserved "Unit")
+        <|> (AdtT <$> rslIdentifier)
 
+rslSetExpr :: Parser TypeExpr
+rslSetExpr = do
+    rtype <- rslType
+    rslReservedOp "-set"
+    pure $ SetTE rtype
+
+-- declarations
+rslTypeDef :: Parser TypeDeclaration
+rslTypeDef =
+    (Sort <$> rslIdentifier) <|> (AbstractType <$> rslIdentifier <*> rslSetExpr)
+
+parseTypeDeclarations :: Parser [TypeDeclaration]
+parseTypeDeclarations = do
+    rslReserved "type"
+    rslCommaSep rslTypeDef
+
+-- module
 parseReservedModType :: Parser Text
 parseReservedModType = do
     rslReserved "extend"
@@ -281,13 +316,13 @@ parseReservedModType = do
 
 parseModule :: Parser Module
 parseModule = do
-    mname <- pack <$> rslLexeme (identifier rslLexer)
+    mname <- rslIdentifier
     rslReservedOp "="
     mextension <- optionMaybe parseReservedModType
     rslReserved "class"
-    -- mdecls <- parseDeclarations
+    mtypes <- TypeDecl <$> parseTypeDeclarations
     rslReserved "end"
-    pure $ Module mname [] mextension
+    pure $ Module mname [mtypes] mextension
 
 parser :: Text -> Either ParseError Module
 parser = parse parseModule "rdm"

@@ -19,7 +19,7 @@ instance Pretty Module where
             Just ext -> pretty (mname <> " = ") <+> hsep ["extend " <> pretty ext <> " with "] <+> vsep ["class", "end"]
 
 data Declaration
-    = TypeDecl (NonEmpty TypeDeclaration)
+    = TypeDecl [TypeDeclaration]
     | ValueDecl (NonEmpty ValueDeclaration)
     | AxiomDecl (NonEmpty AxiomDeclaration)
 
@@ -35,10 +35,12 @@ data Type
     | CharT
     | TextT
     | UnitT
+    | AdtT Text
     deriving (Eq)
 
 data TypeExpr
     = TypeTE Type
+    | SetTE Type
     | ProductTE (NonEmpty TypeExpr)
     | TotalFuncTE TypeExpr TypeExpr
     | PartialFuncTE TypeExpr TypeExpr

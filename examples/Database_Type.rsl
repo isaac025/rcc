@@ -1,0 +1,6 @@
+DATABASE =
+class
+    type
+        Person,
+        Database = Person-set
+end
