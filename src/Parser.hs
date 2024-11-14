@@ -12,6 +12,7 @@ import Text.Parsec (
     oneOf,
     optionMaybe,
     parse,
+    try,
     (<|>),
  )
 import Text.Parsec.Expr (Operator (..))
@@ -299,7 +300,8 @@ rslSetExpr = do
 -- declarations
 rslTypeDef :: Parser TypeDeclaration
 rslTypeDef =
-    (Sort <$> rslIdentifier) <|> (AbstractType <$> rslIdentifier <*> rslSetExpr)
+    try (AbstractType <$> rslIdentifier <* rslReservedOp "=" <*> rslSetExpr)
+        <|> (Sort <$> rslIdentifier)
 
 parseTypeDeclarations :: Parser [TypeDeclaration]
 parseTypeDeclarations = do

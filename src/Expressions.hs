@@ -13,10 +13,20 @@ data Module = Module
     }
 
 instance Pretty Module where
-    pretty (Module mname _ mext) =
-        case mext of
-            Nothing -> pretty mname <+> vsep [" = ", "class", "end"]
-            Just ext -> pretty (mname <> " = ") <+> hsep ["extend " <> pretty ext <> " with "] <+> vsep ["class", "end"]
+    pretty (Module mname decls mext) =
+        let decls' = if isTypes decls then typeDecls decls else []
+         in case mext of
+                Nothing -> pretty mname <+> vsep [" = ", "class", pretty decls', "end"]
+                Just ext -> pretty (mname <> " = ") <+> hsep ["extend " <> pretty ext <> " with "] <+> vsep ["class", "end"]
+      where
+        isTypes :: [Declaration] -> Bool
+        isTypes ((TypeDecl _) : _) = True
+        isTypes _ = False
+
+        typeDecls :: [Declaration] -> [TypeDeclaration]
+        typeDecls [] = []
+        typeDecls ((TypeDecl ds) : xs) = ds ++ typeDecls xs
+        typeDecls (_ : xs) = typeDecls xs
 
 data Declaration
     = TypeDecl [TypeDeclaration]
@@ -26,6 +36,11 @@ data Declaration
 data TypeDeclaration
     = Sort Text
     | AbstractType Text TypeExpr
+
+instance Pretty TypeDeclaration where
+    pretty (Sort text) = pretty text
+    pretty (AbstractType text (TypeTE t)) = pretty text <+> pretty t
+    pretty (AbstractType text _) = pretty text
 
 data Type
     = NatT
@@ -37,6 +52,16 @@ data Type
     | UnitT
     | AdtT Text
     deriving (Eq)
+
+instance Pretty Type where
+    pretty NatT = pretty ("Nat" :: Text)
+    pretty BoolT = pretty ("Bool" :: Text)
+    pretty IntT = pretty ("Int" :: Text)
+    pretty RealT = pretty ("Real" :: Text)
+    pretty CharT = pretty ("Char" :: Text)
+    pretty TextT = pretty ("Text" :: Text)
+    pretty UnitT = pretty ("()" :: Text)
+    pretty (AdtT text) = pretty text
 
 data TypeExpr
     = TypeTE Type
