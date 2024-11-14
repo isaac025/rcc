@@ -28,7 +28,7 @@ rslDef =
         }
 
 rslTypeOps :: [String]
-rslTypeOps = ["-set", "><", "->", "-~->"]
+rslTypeOps = ["-set", "><", "->", "-~->", ":"]
 
 rslOps :: [String]
 rslOps =

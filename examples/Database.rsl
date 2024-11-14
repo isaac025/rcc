@@ -7,8 +7,4 @@ class
         empty : Database,
         register : Person >< Database -> Database,
         check : Person >< Database -> Bool
-    axiom
-        empty is {},
-        forall p : Person, db : Database :- register(p, db) is {p} union db,
-        forall p : Person, db : Database :- check(p, db) is p isin db
 end
