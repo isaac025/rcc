@@ -52,12 +52,13 @@ type TypingList = NonEmpty ValueDeclaration -- typing same as a value declaratio
 
 data AxiomDeclaration = AxiomDeclaration
     { axiomNaming :: Maybe Text
-    , axiomValueExpr :: NonEmpty ValueExpr
+    , axiomValueExpr :: ValueExpr
     }
     deriving (Show)
 
 data ValueExpr
     = BoolVE Bool
+    | IdVE Text
     | If ValueExpr ValueExpr (Maybe [ValueExpr]) ValueExpr
     | NotVE ValueExpr
     | BinOpVE ValueBinOp ValueExpr ValueExpr
@@ -70,7 +71,7 @@ data ValueExpr
     | CharVE Char
     | TextVE Text
     | UnitVE ()
-    | ProductVE (NonEmpty ValueExpr)
+    | ProductVE [ValueExpr]
     | AppVE Text [ValueExpr]
     | Pre ValueExpr
     | FuncVE TypingList ValueExpr

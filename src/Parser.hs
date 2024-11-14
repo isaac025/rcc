@@ -97,6 +97,8 @@ rslFunctionTypeExpr = do
 rslTypeExpr :: Parser TypeExpr
 rslTypeExpr = try rslFunctionTypeExpr <|> rslSimpleTypeExpr
 
+-- value expressions
+
 -- declarations
 rslTypeDef :: Parser TypeDeclaration
 rslTypeDef =
