@@ -1,9 +1,9 @@
 module Expressions where
 
 import Data.List.NonEmpty (NonEmpty)
+import Data.Proxy
 import Data.Text.Lazy (Text)
 import Data.Void (Void)
-import Data.Proxy
 import Numeric.Natural
 
 data Module = Module
@@ -60,13 +60,13 @@ data AxiomDeclaration = AxiomDeclaration
 data ValueExpr
     = BoolVE Bool
     | IdVE Text
+    | SetVE
     | If ValueExpr ValueExpr (Maybe [(ValueExpr, ValueExpr)]) ValueExpr
-    | NotVE ValueExpr
     | BinOpVE ValueBinOp ValueExpr ValueExpr
+    | UnaryOpVE ValueUnOp ValueExpr
     | ChaosVE (Proxy Void)
     | QuantVE Quantifier TypingList ValueExpr
     | IntVE Int
-    | Abs ValueExpr
     | NatVE Natural
     | RealVE Double
     | CharVE Char
@@ -74,13 +74,12 @@ data ValueExpr
     | UnitVE ()
     | ProductVE [ValueExpr]
     | AppVE Text [ValueExpr]
-    | Pre ValueExpr
     | FuncVE TypingList ValueExpr
-    | Post ValueExpr
     deriving (Show)
 
 data ValueBinOp
-    = Equal
+    = Func
+    | Equal
     | NotEqual
     | Is
     | IsIn
@@ -98,6 +97,23 @@ data ValueBinOp
     | Div
     | Rem
     | Exp
+    deriving (Show)
+
+data ValueUnOp
+    = Not
+    | Abs
+    | IntC
+    | RealC
+    | Card
+    | Len
+    | Inds
+    | Elems
+    | Hd
+    | Tl
+    | Dom
+    | Rng
+    | Post
+    | Pre
     deriving (Show)
 
 data Quantifier = Forall | Exists | ExistsOne

@@ -1,19 +1,22 @@
 {-# LANGUAGE TypeApplications #-}
+
 module Parser where
 
 import Control.Monad (void)
-import Data.Void (Void)
 import Data.Functor.Identity (Identity)
 import Data.List.NonEmpty (nonEmpty)
-import Numeric.Natural (Natural)
 import Data.Maybe (catMaybes)
+import Data.Proxy
 import Data.Text.Lazy (Text, pack)
+import Data.Void (Void)
 import Expressions
 import Language
+import Numeric.Natural (Natural)
 import Text.Parsec (
     ParseError,
+    between,
+    char,
     choice,
-    string,
     many,
     many1,
     oneOf,
@@ -21,11 +24,11 @@ import Text.Parsec (
     parse,
     parserFail,
     sepBy1,
+    string,
     try,
     (<|>),
  )
-import Data.Proxy
-import Text.Parsec.Expr (Operator (..))
+import Text.Parsec.Expr (Assoc (..), Operator (..), OperatorTable, buildExpressionParser)
 import Text.Parsec.Text.Lazy (Parser)
 import Text.Parsec.Token (
     GenTokenParser (..),
@@ -121,53 +124,138 @@ rslTypeExpr = try rslFunctionTypeExpr <|> rslSimpleTypeExpr
 -- value expressions
 rslBoolValueExpr :: Parser ValueExpr
 rslBoolValueExpr = do
-    boolVal <- (True <$ rslReserved "true") <|> (False <$ rslReserved "false")
+    boolVal <- rslLexeme (True <$ rslReserved "true") <|> (False <$ rslReserved "false")
     pure $ BoolVE boolVal
 
 rslIntValueExpr :: Parser ValueExpr
-rslIntValueExpr = IntVE <$> rslInt
+rslIntValueExpr = IntVE <$> rslLexeme rslInt
 
 rslNatValueExpr :: Parser ValueExpr
-rslNatValueExpr = NatVE <$> rslNat
+rslNatValueExpr = NatVE <$> rslLexeme rslNat
 
 rslRealValueExpr :: Parser ValueExpr
-rslRealValueExpr = RealVE <$> rslReal
+rslRealValueExpr = RealVE <$> rslLexeme rslReal
 
 rslCharValueExpr :: Parser ValueExpr
-rslCharValueExpr = NatVE <$> rslNat
+rslCharValueExpr = CharVE <$> rslLexeme rslChar
 
 rslTextValueExpr :: Parser ValueExpr
-rslTextValueExpr = TextVE <$> rslText
+rslTextValueExpr = TextVE <$> rslLexeme rslText
 
 rslUnitValueExpr :: Parser ValueExpr
-rslUnitValueExpr = UnitVE <$> void (string "()")
+rslUnitValueExpr = UnitVE <$> void (rslLexeme $ string "()")
 
 rslChaosValueExpr :: Parser ValueExpr
 rslChaosValueExpr = ChaosVE <$> ((Proxy @Void) <$ rslReserved "chaos")
 
 rslIdValueExpr :: Parser ValueExpr
-rslIdValueExpr = IdVE <$> rslIdentifier
+rslIdValueExpr = IdVE <$> rslLexeme rslIdentifier
+
+rslEmptySetValueExpr :: Parser ValueExpr
+rslEmptySetValueExpr = SetVE <$ rslLexeme (string "{}")
+
+rslTypingList :: Parser TypingList
+rslTypingList = do
+    rslTypings <- rslCommaSep rslValueDef
+    case nonEmpty rslTypings of
+        Nothing -> parserFail "parsing error on typing"
+        Just typings -> pure typings
+
+rslBinaryOp :: String -> (a -> a -> a) -> Assoc -> Operator Text () Identity a
+rslBinaryOp txt f = Infix (rslReservedOp txt >> pure f)
+
+rslUnaryOp :: String -> (a -> a) -> Operator Text () Identity a
+rslUnaryOp txt f = Prefix (rslReservedOp txt >> pure f)
+
+table :: OperatorTable Text () Identity ValueExpr
+table =
+    [
+        [ rslUnaryOp "~" (UnaryOpVE Not)
+        , rslUnaryOp "abs" (UnaryOpVE Abs)
+        , rslUnaryOp "int" (UnaryOpVE IntC)
+        , rslUnaryOp "real" (UnaryOpVE RealC)
+        , rslUnaryOp "card" (UnaryOpVE Card)
+        , rslUnaryOp "len" (UnaryOpVE Len)
+        , rslUnaryOp "inds" (UnaryOpVE Inds)
+        , rslUnaryOp "elems" (UnaryOpVE Elems)
+        , rslUnaryOp "hd" (UnaryOpVE Hd)
+        , rslUnaryOp "tl" (UnaryOpVE Tl)
+        , rslUnaryOp "dom" (UnaryOpVE Dom)
+        , rslUnaryOp "rng" (UnaryOpVE Rng)
+        ]
+    ,
+        [ rslBinaryOp ":" (BinOpVE Func) AssocNone
+        ]
+    ,
+        [ rslBinaryOp "**" (BinOpVE Exp) AssocNone
+        ]
+    ,
+        [ rslBinaryOp "*" (BinOpVE Mul) AssocLeft
+        , rslBinaryOp "/" (BinOpVE Div) AssocLeft
+        ]
+    ,
+        [ rslBinaryOp "+" (BinOpVE Add) AssocLeft
+        , rslBinaryOp "-" (BinOpVE Sub) AssocLeft
+        , rslBinaryOp "\\" (BinOpVE Rem) AssocLeft
+        , rslBinaryOp "union" (BinOpVE Union) AssocLeft
+        ]
+    ,
+        [ rslBinaryOp "=" (BinOpVE Equal) AssocNone
+        , rslBinaryOp "=" (BinOpVE NotEqual) AssocNone
+        , rslBinaryOp ">" (BinOpVE Gt) AssocNone
+        , rslBinaryOp "<" (BinOpVE Lt) AssocNone
+        , rslBinaryOp ">=" (BinOpVE GtEq) AssocNone
+        , rslBinaryOp "<=" (BinOpVE LtEq) AssocNone
+        , rslBinaryOp "isin" (BinOpVE IsIn) AssocNone
+        ]
+    , [rslBinaryOp "/\\" (BinOpVE And) AssocRight]
+    , [rslBinaryOp "\\/" (BinOpVE Or) AssocRight]
+    , [rslBinaryOp "=>" (BinOpVE Impl) AssocRight]
+    ,
+        [ rslBinaryOp "is" (BinOpVE Is) AssocNone
+        , rslUnaryOp "post" (UnaryOpVE Post)
+        ]
+    ]
+
+valueExprTerms :: Parser ValueExpr
+valueExprTerms = rslIdValueExpr <|> rslEmptySetValueExpr
+
+rslSimpleValueExpr :: Parser ValueExpr
+rslSimpleValueExpr = buildExpressionParser table valueExprTerms
+
+rslQuantValueExpr :: Parser ValueExpr
+rslQuantValueExpr = do
+    quant <- (Forall <$ rslReservedOp "forall") <|> (Exists <$ rslReservedOp "exists")
+    typings <- rslTypingList
+    rslReservedOp ":-"
+    QuantVE quant typings <$> valueExprTerms
+
+rslFuncAppValueExpr :: Parser ValueExpr
+rslFuncAppValueExpr = do
+    funId <- rslIdentifier
+    AppVE funId <$> between (char '(') (char ')') (rslCommaSep valueExprTerms)
+
+valueExpr :: Parser ValueExpr
+valueExpr = rslFuncAppValueExpr
 
 rslIfValueExpr :: Parser ValueExpr
 rslIfValueExpr = do
     rslReserved "if"
-    cnd <- rslValueExpr
+    cnd <- rslSimpleValueExpr
     rslReserved "then"
-    thn <- rslValueExpr
+    thn <- rslSimpleValueExpr
     elsifs <- optionMaybe $ many rslElsifExpr
     rslReserved "else"
-    If cnd thn elsifs <$> rslValueExpr
-    where
-        rslElsifExpr :: Parser (ValueExpr, ValueExpr)
-        rslElsifExpr = do
-            rslReserved "elsif"
-            c <- rslValueExpr
-            rslReserved "then"
-            expr <- rslValueExpr
-            pure (c, expr)
+    If cnd thn elsifs <$> rslSimpleValueExpr
+  where
+    rslElsifExpr :: Parser (ValueExpr, ValueExpr)
+    rslElsifExpr = do
+        rslReserved "elsif"
+        c <- rslSimpleValueExpr
+        rslReserved "then"
+        expr <- rslSimpleValueExpr
+        pure (c, expr)
 
-rslValueExpr :: Parser ValueExpr
-rslValueExpr = undefined
 -- declarations
 rslTypeDef :: Parser TypeDeclaration
 rslTypeDef =
@@ -191,10 +279,17 @@ rslValueDeclarations = do
     rslCommaSep rslValueDef
 
 rslAxiomDef :: Parser AxiomDeclaration
-rslAxiomDef = undefined
+rslAxiomDef = do
+    anaming <- optionMaybe $ rslLexeme rslAxiomNaming
+    AxiomDeclaration anaming <$> rslSimpleValueExpr
+  where
+    rslAxiomNaming :: Parser Text
+    rslAxiomNaming = char '[' *> rslIdentifier <* char ']'
 
 rslAxiomDeclarations :: Parser [AxiomDeclaration]
-rslAxiomDeclarations = undefined
+rslAxiomDeclarations = do
+    rslReserved "axiom"
+    rslCommaSep rslAxiomDef
 
 -- module
 parseReservedModType :: Parser Text
@@ -212,8 +307,8 @@ parseModule = do
     rslReserved "class"
     mtypes <- optionMaybe $ TypeDecl <$> rslTypeDeclarations
     mvalues <- optionMaybe $ ValueDecl <$> rslValueDeclarations
-    -- maxioms <- optionMaybe $ AxiomDecl <$> rslAxiomDeclarations
-    let mdecls = catMaybes [mtypes, mvalues]
+    maxioms <- optionMaybe $ AxiomDecl <$> rslAxiomDeclarations
+    let mdecls = catMaybes [mtypes, mvalues, maxioms]
     case nonEmpty mdecls of
         Nothing -> parserFail "empty declarations, expected at least value declarations"
         Just decls -> do

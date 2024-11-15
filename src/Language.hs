@@ -28,16 +28,17 @@ rslDef =
         }
 
 rslTypeOps :: [String]
-rslTypeOps = ["-set", "><", "->", "-~->", ":"]
+rslTypeOps = ["-set", "><", "->", "-~->", "-m->", "-infset", "-list", "-inflist"]
 
 rslOps :: [String]
 rslOps =
     [ "="
     , "~="
     , "is"
+    , ":"
     , "isin"
+    , "~isin"
     , "=>"
-    , ":-"
     , "union"
     , "card"
     , "~"
@@ -59,6 +60,14 @@ rslOps =
     , "/"
     , "\\"
     , "**"
+    , "card"
+    , "len"
+    , "inds"
+    , "elems"
+    , "hd"
+    , "tl"
+    , "dom"
+    , "rng"
     ]
 
 rslKeywords :: [String]
